@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(untagged)]
 pub enum Condition {
     ConditionAnd(ConditionAnd),
     ConditionNot(ConditionNot),
@@ -47,6 +48,8 @@ pub struct ConditionOr {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(untagged)]
+
 pub enum CompareValue {
     String(String),
     F64(f64),
@@ -54,6 +57,8 @@ pub enum CompareValue {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(untagged)]
+
 pub enum Compare {
     CompareEq(CompareEq),
     CompareLt(CompareLt),
