@@ -2,7 +2,7 @@ use models::query_request::{QueryActions, QueryOptions, QueryRequest};
 use models::query_result::QueryResult;
 use models::query_schema::Schema;
 use std::env;
-mod models;
+pub mod models;
 
 pub struct Client {
     web_client: reqwest::Client,
