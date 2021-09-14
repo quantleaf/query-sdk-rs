@@ -4,11 +4,11 @@ use std::collections::HashMap;
 pub type EnumDomain = HashMap<String, SimpleDescription>;
 
 #[derive(Serialize, Debug)]
-
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SimpleDomain {
-    DATE,
-    NUMBER,
-    TEXT,
+    Date,
+    Number,
+    Text,
 }
 
 #[derive(Serialize, Debug)]

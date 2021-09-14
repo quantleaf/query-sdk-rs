@@ -3,10 +3,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(untagged)]
 pub enum Condition {
-    ConditionAnd(ConditionAnd),
-    ConditionNot(ConditionNot),
-    ConditionOr(ConditionOr),
-    ConditionCompare(ConditionCompare),
+    And(ConditionAnd),
+    Not(ConditionNot),
+    Or(ConditionOr),
+    Compare(ConditionCompare),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -73,12 +73,12 @@ pub enum CompareValue {
 #[serde(untagged)]
 
 pub enum Compare {
-    CompareEq(CompareEq),
-    CompareLt(CompareLt),
-    CompareLte(CompareLte),
-    CompareGt(CompareGt),
-    CompareGte(CompareGte),
-    CompareNot(CompareNot),
+    Eq(CompareEq),
+    Lt(CompareLt),
+    Lte(CompareLte),
+    Gt(CompareGt),
+    Gte(CompareGte),
+    Not(CompareNot),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -129,10 +129,10 @@ mod tests {
         let query = QueryResult {
             query: Some(vec![QuerySchema {
                 from: vec!["from".to_string()],
-                condition: Condition::ConditionAnd(ConditionAnd {
-                    and: vec![Condition::ConditionOr(ConditionOr {
-                        or: vec![Condition::ConditionCompare(ConditionCompare {
-                            compare: Compare::CompareEq(CompareEq {
+                condition: Condition::And(ConditionAnd {
+                    and: vec![Condition::Or(ConditionOr {
+                        or: vec![Condition::Compare(ConditionCompare {
+                            compare: Compare::Eq(CompareEq {
                                 key: "key".to_string(),
                                 eq: CompareValue::String("eq".to_string()),
                             }),

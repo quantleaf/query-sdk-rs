@@ -22,8 +22,8 @@ impl Client {
             request_template: serde_json::to_string(&QueryRequest {
                 text: "".to_owned(),
                 schemas: Some(schemas),
-                options: options,
-                actions: actions,
+                options,
+                actions,
                 schemas_hash: None,
             })
             .unwrap()
@@ -57,9 +57,7 @@ impl Client {
                 }
                 Err(err) => Err(err),
             },
-            Err(err) => {
-                return Err(err);
-            }
+            Err(err) => Err(err),
         }
     }
 }
@@ -90,7 +88,7 @@ mod tests {
             vec![Schema {
                 fields: vec![Field {
                     description: SimpleDescription::String("field".into()),
-                    domain: Domain::SimpleDomain(SimpleDomain::TEXT),
+                    domain: Domain::SimpleDomain(SimpleDomain::Text),
                     key: "key".into(),
                 }],
                 name: KeyWithDescriptions {
@@ -116,8 +114,8 @@ mod tests {
         let expected_result = QueryResult {
             query: Some(vec![QuerySchema {
                 from: vec!["name".into()],
-                condition: Condition::ConditionCompare(ConditionCompare {
-                    compare: Compare::CompareEq(CompareEq {
+                condition: Condition::Compare(ConditionCompare {
+                    compare: Compare::Eq(CompareEq {
                         eq: CompareValue::String("hello".into()),
                         key: "key".into(),
                     }),
