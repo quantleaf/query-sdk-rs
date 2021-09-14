@@ -1,136 +1,135 @@
-use serde::{Deserialize, Serialize};
+use models::query_request::{QueryActions, QueryOptions, QueryRequest};
+use models::query_result::QueryResult;
+use models::query_schema::Schema;
+use std::env;
+mod models;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(untagged)]
-pub enum Condition {
-    ConditionAnd(ConditionAnd),
-    ConditionNot(ConditionNot),
-    ConditionOr(ConditionOr),
-    ConditionCompare(ConditionCompare),
+pub struct Client {
+    web_client: reqwest::Client,
+    api_key: String,
+    request_template: String,
+}
+impl Client {
+    pub fn new(
+        schemas: Vec<Schema>,
+        actions: QueryActions,
+        options: Option<QueryOptions>,
+    ) -> Client {
+        dotenv::dotenv().ok();
+        Client {
+            web_client: reqwest::Client::new(),
+            api_key: get_api_key(),
+            request_template: serde_json::to_string(&QueryRequest {
+                text: "".to_owned(),
+                schemas: Some(schemas),
+                options: options,
+                actions: actions,
+                schemas_hash: None,
+            })
+            .unwrap()
+            .chars()
+            .skip(10)
+            .collect(),
+        }
+    }
+
+    pub async fn translate(&self, text: &str) -> Result<QueryResult, reqwest::Error> {
+        // Build a request in a hacky but fast way (we do not need to re serialize the whole request only because the query has changed)
+        let body = format!(
+            "{{\"text\":\"{}\"{}",
+            text,
+            self.request_template.to_owned()
+        );
+
+        let resp = self
+            .web_client
+            .post("https://api.query.quantleaf.com/translate")
+            .header("X-API-KEY", self.api_key.as_str())
+            .header("Content-Type", "application/json")
+            .body(body)
+            .send()
+            .await;
+
+        match resp {
+            Ok(result) => match result.error_for_status() {
+                Ok(response) => {
+                    return Ok(response.json::<QueryResult>().await.unwrap());
+                }
+                Err(err) => Err(err),
+            },
+            Err(err) => {
+                return Err(err);
+            }
+        }
+    }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct QuerySchema {
-    pub from: Vec<String>,
-    pub condition: Condition,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct Unknown {
-    pub offset: usize,
-    pub length: usize,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct QueryResult {
-    pub query: Option<Vec<QuerySchema>>,
-    pub unknown: Option<Vec<Unknown>>,
-}
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-
-pub struct ConditionCompare {
-    pub compare: Compare,
-}
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-
-pub struct ConditionAnd {
-    pub and: Vec<Condition>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct ConditionNot {
-    pub not: Box<Condition>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct ConditionOr {
-    pub or: Vec<Condition>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(untagged)]
-
-pub enum CompareValue {
-    String(String),
-    F64(f64),
-    Bool(bool),
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(untagged)]
-
-pub enum Compare {
-    CompareEq(CompareEq),
-    CompareLt(CompareLt),
-    CompareLte(CompareLte),
-    CompareGt(CompareGt),
-    CompareGte(CompareGte),
-    CompareNot(CompareNot),
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-
-pub struct CompareEq {
-    pub key: String,
-    pub eq: CompareValue,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-
-pub struct CompareLt {
-    pub key: String,
-    pub lt: CompareValue,
-}
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-pub struct CompareLte {
-    pub key: String,
-    pub lte: CompareValue,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-
-pub struct CompareGt {
-    pub key: String,
-    pub gt: CompareValue,
-}
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-
-pub struct CompareGte {
-    pub key: String,
-    pub gte: CompareValue,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-
-pub struct CompareNot {
-    pub key: String,
-    pub not: CompareValue,
+fn get_api_key() -> String {
+    match env::var("QUANTLEAF_API_KEY") {
+        Ok(key) => key,
+        Err(_) => panic!("Failed to load API key"),
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::models::{
+        query_request::{QueryAction, SuggestionAction},
+        query_result::{
+            Compare, CompareEq, CompareValue, Condition, ConditionCompare, QuerySchema, Suggestion,
+        },
+        query_schema::{
+            Domain, Field, KeyWithDescriptions, QueryOperations, SimpleDescription, SimpleDomain,
+        },
+    };
 
-    #[test]
-    fn serialization_deserialization() {
-        let query = QueryResult {
-            query: Some(vec![QuerySchema {
-                from: vec!["from".to_string()],
-                condition: Condition::ConditionAnd(ConditionAnd {
-                    and: vec![Condition::ConditionOr(ConditionOr {
-                        or: vec![Condition::ConditionCompare(ConditionCompare {
-                            compare: Compare::CompareEq(CompareEq {
-                                key: "key".to_string(),
-                                eq: CompareValue::String("eq".to_string()),
-                            }),
-                        })],
-                    })],
+    use super::*;
+    #[actix_rt::test]
+    async fn it_can_create_client() {
+        let client = Client::new(
+            vec![Schema {
+                fields: vec![Field {
+                    description: SimpleDescription::String("field".into()),
+                    domain: Domain::SimpleDomain(SimpleDomain::TEXT),
+                    key: "key".into(),
+                }],
+                name: KeyWithDescriptions {
+                    key: "name".into(),
+                    description: SimpleDescription::String("name".into()),
+                },
+                operations: QueryOperations {
+                    negative: false,
+                    nesting: false,
+                },
+            }],
+            QueryActions {
+                query: Some(QueryAction {}),
+                suggest: Some(SuggestionAction {
+                    limit: 10,
+                    offset: 0,
                 }),
+            },
+            None,
+        );
+
+        let resp = client.translate("field equal hello").await.unwrap();
+        let expected_result = QueryResult {
+            query: Some(vec![QuerySchema {
+                from: vec!["name".into()],
+                condition: Condition::ConditionCompare(ConditionCompare {
+                    compare: Compare::CompareEq(CompareEq {
+                        eq: CompareValue::String("hello".into()),
+                        key: "key".into(),
+                    }),
+                }),
+            }]),
+            schema_hash: Some("yAgJmHeX7gNMjtss4EKx/pFm65U=".into()),
+            suggest: Some(vec![Suggestion {
+                offset: 0,
+                text: "field".into(),
             }]),
             unknown: None,
         };
-        let json = serde_json::to_string(&query).unwrap();
-        let query_from_json = serde_json::from_str::<QueryResult>(json.as_str()).unwrap();
-        assert_eq!(query, query_from_json);
+        assert_eq!(resp, expected_result)
     }
 }
