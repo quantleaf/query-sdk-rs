@@ -2,7 +2,6 @@ use models::query_request::{QueryActions, QueryOptions, QueryRequest};
 use models::query_result::QueryResult;
 use models::query_schema::Schema;
 use std::env;
-use std::fmt::format;
 pub mod models;
 
 pub struct Client {

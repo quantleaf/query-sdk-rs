@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 pub type EnumDomain = HashMap<String, SimpleDescription>;
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SimpleDomain {
     Date,
@@ -11,7 +11,7 @@ pub enum SimpleDomain {
     Text,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 
 pub enum Domain {
@@ -121,7 +121,7 @@ pub struct CustomTypeRefence
     domain?:StandardDomain|EnumDomain|ExternalDomain;
 }*/
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 
 pub struct KeyWithDescriptions
 //, TypeDeclarationOrTyped
@@ -130,14 +130,14 @@ pub struct KeyWithDescriptions
     pub description: SimpleDescription,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 
 pub struct QueryOperations {
     pub negative: bool,
     pub nesting: bool,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 
 pub struct Schema {
     pub name: KeyWithDescriptions,
@@ -172,7 +172,7 @@ static isStandardDomain(domain:StandardDomain|EnumDomain|ExternalDomain)
     return typeof domain == 'string';
 }*/
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 
 pub struct Field {
     // The key of the field

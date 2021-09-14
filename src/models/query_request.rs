@@ -1,6 +1,6 @@
 use crate::models::query_schema::Schema;
-use serde::Serialize;
-#[derive(Serialize, Debug)]
+use serde::{Serialize, Deserialize};
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 
 pub struct QueryRequest {
@@ -10,24 +10,24 @@ pub struct QueryRequest {
     pub actions: QueryActions,
     pub options: Option<QueryOptions>,
 }
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct SuggestionAction {
     pub limit: usize,
     pub offset: usize,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 
 pub struct QueryActions {
     pub query: Option<QueryAction>,
     pub suggest: Option<SuggestionAction>,
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 
 pub struct QueryAction {}
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 
 pub struct QueryOptions {
