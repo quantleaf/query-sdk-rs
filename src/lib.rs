@@ -2,44 +2,41 @@ use models::query_request::{QueryActions, QueryOptions, QueryRequest};
 use models::query_result::QueryResult;
 use models::query_schema::Schema;
 use std::env;
+use std::fmt::format;
 pub mod models;
 
 pub struct Client {
     web_client: reqwest::Client,
     api_key: String,
-    request_template: String,
+    schemas_serialized: String,
 }
 impl Client {
     pub fn new(
         schemas: Vec<Schema>,
-        actions: QueryActions,
-        options: Option<QueryOptions>,
+        
     ) -> Client {
         dotenv::dotenv().ok();
         Client {
             web_client: reqwest::Client::new(),
             api_key: get_api_key(),
-            request_template: serde_json::to_string(&QueryRequest {
-                text: "".to_owned(),
-                schemas: Some(schemas),
-                options,
-                actions,
-                schemas_hash: None,
-            })
-            .unwrap()
-            .chars()
-            .skip(10)
-            .collect(),
+            schemas_serialized: serde_json::to_string(&schemas)
+            .unwrap(),
         }
     }
 
-    pub async fn translate(&self, text: &str) -> Result<QueryResult, reqwest::Error> {
+    pub async fn translate(&self, text: &str,actions: QueryActions, options: Option<QueryOptions>,) -> Result<QueryResult, reqwest::Error> {
         // Build a request in a hacky but fast way (we do not need to re serialize the whole request only because the query has changed)
-        let body = format!(
-            "{{\"text\":\"{}\"{}",
-            text,
-            self.request_template.to_owned()
-        );
+        let dummy_body = serde_json::to_string(&QueryRequest {
+            actions: actions,
+            options: options,
+            schemas: Some(Vec::new()),
+            schemas_hash: None,
+            text: "".into()
+        }).unwrap();
+
+        let suffix = dummy_body.chars().skip(24).collect::<String>();
+        let body = format!("{{\"text\":\"{}\", \"schemas\": {},{}",text,self.schemas_serialized,suffix);
+
 
         let resp = self
             .web_client
@@ -100,17 +97,15 @@ mod tests {
                     nesting: false,
                 },
             }],
-            QueryActions {
-                query: Some(QueryAction {}),
-                suggest: Some(SuggestionAction {
-                    limit: 10,
-                    offset: 0,
-                }),
-            },
-            None,
         );
-
-        let resp = client.translate("field equal hello").await.unwrap();
+        let resp = client.translate("field equal hello",QueryActions {
+            query: Some(QueryAction {}),
+            suggest: Some(SuggestionAction {
+                limit: 10,
+                offset: 0,
+            }),
+        },
+        None).await.unwrap();
         let expected_result = QueryResult {
             query: Some(vec![QuerySchema {
                 from: vec!["name".into()],
