@@ -21,7 +21,7 @@ pub enum Domain {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum StringOrStringVec {
     String(String),
-    StringVec(),
+    StringVec(Vec<String>),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
