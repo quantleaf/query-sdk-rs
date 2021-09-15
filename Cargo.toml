@@ -1,7 +1,7 @@
 [package]
 name = "quantleaf-query-sdk"
 description = "Model definitions for Quantleaf Query"
-version = "0.0.1-alpha.9"
+version = "0.0.1-alpha.10"
 edition = "2018"
 authors = ["marcus-pousette <marcus.pousette@quantleaf.com>"]
 license = "MIT"
